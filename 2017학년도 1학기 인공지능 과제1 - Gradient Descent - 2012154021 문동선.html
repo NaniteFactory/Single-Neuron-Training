@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+	<meta charset="utf-8" />
+	<title>single-neuron-training</title>
+	<style type="text/css">
+		div { text-align: center; }
+	</style>
+</head>
+<body>
+	<h3 align="center">2017학년도 1학기 인공지능 과제1 - Gradient Descent - 2012154021 문동선</h3>
+	<div id="container" style="min-width: 310px; height: 640px; margin: 0 auto"></div>
+	<div>
+		<button id="btn1" style="width:250px;height:75px;">Training: 1회 수행</button>
+		<button id="btn2" style="width:250px;height:75px;">Training: 목표치까지 반복</button>
+		<button id="btn3" style="width:250px;height:75px;">초기화</button>
+	</div>
+	<div><img id="img1" src="http://www.controlglobal.com/assets/Media/0611/article_221_fig1.jpg" width="310px"></div>
+
+	<!-- JavaScript -->
+	<script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+	<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+	<script src="https://code.highcharts.com/highcharts.js"></script>
+	<script src="https://code.highcharts.com/modules/exporting.js"></script>
+	<script type="text/javascript">
+
+	// initial weight
+	const DOMAIN1 = -20;
+	const DOMAIN2 = 20;
+
+	const INPUT_EASY = 1; // 고정 Input 값: 1
+	const OUTPUT_TARGET = 5; // Output의 목적값: 5
+
+	// some global static utility function
+	function random(from, to) {
+		return Math.floor((Math.random() * (to - from + 1)) + from);
+	}
+
+	// 소수점 셋째 자리까지 자른다
+	function cuteFloat(_yourFloat) {
+		return Math.floor(_yourFloat*1000)/1000;
+	}
+
+	// 소수점 20번째 자리까지 자른다
+	function longFloat(_yourFloat) {
+		return Math.floor(_yourFloat*100000000000000000000)/100000000000000000000;
+	}
+
+	// --------------------------------------------------------
+
+	// class Neuron
+	function Neuron(_weight, _learningRate, _feedback) {
+		// 학생이 무엇을 배우려면 스스로의 배움의 자세와 가르침을 주는 스승이 필요했다
+		this.feedback = _feedback;
+		this.weight = _weight; // W
+		this.learningRate = _learningRate; // η
+		this.trial = 0;
+		this.prevWeight = this.weight;
+		this.prevError;
+
+		// private
+		// Activation function: g(x) = y = x 
+		this.g = function(_x) {
+			return _x;
+		};
+
+		// public
+		// inputs -> summation -> activation function -> output
+		this.getOutput = function(_singleInput) {
+			return this.g(_singleInput * this.weight);
+		};
+
+		// public
+		// 학생이 잘못된 점을 깨달으려면 선생에게 물어서 평가 지도를 받는다
+		this.getError = function() {
+			return this.feedback.getError(this.getOutput(INPUT_EASY));
+		};
+
+		this.prevError = this.getError();
+
+		// public
+		// 너무 세면 약하게 해 보고 너무 약하면 조금 더 세게 해 보는 방식의 학습 알고리즘
+		this.learn = function() {
+			if (!this.getError()) { return false; } // 최저점 0을 찾으면 더 배울 것이 없음 하산하시게
+			
+			//var delta = this.feedback.getDirection(this.getOutput(INPUT_EASY));
+
+			var delta;
+			if (this.weight != this.prevWeight) { // 분모가 0이 아닌 경우
+				delta = (this.getError() - this.prevError)/(this.weight - this.prevWeight);
+			} else if (this.trial == 0) { // 그 직전 데이터가 없으므로 임의의 초기값 설정한다
+				delta = this.feedback.getDirection(this.getOutput(INPUT_EASY));
+			} else if (this.trial > 0 && (this.weight - this.prevWeight) == 0) {
+				return false; // 끝에 도달했다고 봐야 합니다
+				// 분모가 0이라면 수가 너무 작고 정밀해서 산술오차가 발생하고 있는 것이다.
+				// delta = Number.MIN_VALUE * Math.pow(10, 308) * this.feedback.getDirection(this.getOutput(INPUT_EASY));
+			} else { // 예외처리
+				window.alert('error: this shall never happen');
+			}
+
+			++this.trial;
+			this.prevWeight = this.weight;
+			this.prevError = this.getError();
+			this.weight = this.weight - (this.learningRate * delta); // W = W-(η*미분값)
+			console.log(delta);
+			return true;
+		};
+	};
+
+	// class Feedback
+	function Feedback(_goal) {
+		this.goal = _goal; // α
+
+		// E = ((y-α)^2)/2
+		this.getError = function(_yourOutput) {
+			return ( (_yourOutput - this.goal) * (_yourOutput - this.goal) ) / 2;
+			};
+
+		// E' = y-α
+			this.getErrorSlope = function(_yourOutput) {
+			return _yourOutput - this.goal;
+			};
+
+			// 초기값: 미분값의 부호가 붙은 1
+			this.getDirection = function(_yourOutput) {
+				if (this.getErrorSlope(_yourOutput) == 0) { return 0; }
+				return this.getErrorSlope(_yourOutput) / Math.abs(this.getErrorSlope(_yourOutput));
+			}
+	};
+
+	// --------------------------------------------------------
+
+	window.alert('좋습니다...');
+
+	var learningRate = parseFloat(
+		window.prompt(
+			'뉴런의 learning rate는 몇입니까? 0 ~ 1 사이의 값을 입력해 주세요.', '' + cuteFloat(Math.random())
+		)
+	);
+
+	if(!(learningRate <= 1 && learningRate >= 0)){
+		learningRate = Math.random();
+	};
+
+	var weight = parseFloat(
+		window.prompt(
+			'뉴런의 weight는 몇입니까? 실수 값을 입력해 주세요.', '' + random(DOMAIN1, DOMAIN2)
+		)
+	);
+
+	if(!(weight != NaN && weight != null && weight != Infinity && weight != -Infinity)){
+		weight = random(DOMAIN1, DOMAIN2);
+	};
+
+	// --------------------------------------------------------
+
+	var teacher = new Feedback(OUTPUT_TARGET);
+	var student = new Neuron(weight, learningRate, teacher);
+
+	// Plotting
+	var chart1 = Highcharts.chart('container', {
+		chart: { type: 'spline' },
+		title: { text: 'Error space' },
+		subtitle: { text: 'Target output: ? / Learning rate: ? / Trial: ? / Current output: ?' },
+		xAxis: { type: 'linear' },
+		yAxis: {
+			title: { text: 'E (Error)' },
+			minorTickInterval: 0.1
+		},
+		tooltip: {
+			headerFormat: '<b>Data</b><br>',
+			pointFormat: 'W = {point.x}, E = {point.y}'
+		},
+		plotOptions: {
+			spline: {
+				dataLabels: { enabled: false },
+				marker: { enabled: true }
+			}
+		},
+		series: [{
+			type: 'spline',
+			id: 'series1',
+			name: 'W (Weight)',
+			lineWidth: 1,
+			dashStyle: 'ShortDot',
+			tooltip: { headerFormat: '<b>Highway</b><br>' }
+		}, {
+			type: 'spline',
+			id: 'series2',
+			name: 'Slope',
+			lineWidth: 1,
+			dashStyle: 'ShortDot',
+			marker: {
+				fillColor: '#6b8e23'
+			},
+			tooltip: { 
+				headerFormat: '<b>Slope</b><br>',
+				pointFormat: "E' = {point.y}"
+			}
+		}, {
+			type: 'spline',
+			id: 'series3',
+			name: 'W-new (Current Weight)',
+			lineWidth: 4,
+			dataLabels: { enabled: true },
+			marker: {
+				radius: 7,
+				lineColor: '#ff0000'
+			},
+			tooltip: {
+				headerFormat: '<b>Neuron</b><br>',
+				pointFormat: 'W = {point.x}, E = {point.y}'
+			}
+		}]
+	});
+
+	chart1.refreshText = function() {
+		chart1.subtitle.update({ 
+			text: 'Target output: ' + teacher.goal + 
+			' / Learning rate: ' + cuteFloat(student.learningRate) +
+			' / Trial: ' + student.trial +
+			' / Current output: ' + student.getOutput(INPUT_EASY)
+		});
+	};
+
+	chart1.refreshText();
+
+	var series1 = chart1.get('series1'); // W (Weight)
+	var series2 = chart1.get('series2'); // Slope
+	var series3 = chart1.get('series3'); // W-new (Current Weight)
+
+	for(var i=DOMAIN1; i<=DOMAIN2; ++i) {
+		series1.addPoint([i, teacher.getError(i)]);
+		series2.addPoint([i, teacher.getErrorSlope(i)]);
+	}
+
+	series3.addPoint([student.weight, student.getError()]);
+	console.log(student);
+
+	var btn1 = document.getElementById('btn1');
+
+	btn1.onclick = function() {
+		if (student.learn()) {
+			chart1.refreshText();
+			series3.addPoint([student.weight, student.getError()]);
+			return true;
+		} else {
+			window.alert('딩동댕 끝입니다');
+			chart1.refreshText();
+			series3.addPoint([student.weight, student.getError()]);
+			series1.hide();
+			series2.hide();
+			return false;
+		}
+	}
+
+	document.getElementById('btn2').onclick = function() {
+		for(;btn1.onclick();) {
+			if (student.trial >= 200) {
+				for(;student.learn();) {
+					if (student.trial >= 400) {
+						chart1.refreshText();
+						series3.addPoint([student.weight, student.getError()]);
+						window.alert('노답');
+						return;
+					}
+				}
+			}
+		};
+	}
+
+	document.getElementById('btn3').onclick = function() {
+		window.location.reload(true);
+	}
+	</script>
+</body>
+</html>
+
