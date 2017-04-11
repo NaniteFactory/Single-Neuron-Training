@@ -1,9 +1,9 @@
-﻿# Single-Neuron-Training
+﻿# Single-Neuron-Training-using-Gradient-Descent
 
 ## 개요
 - 2017학년도 4학년 1학기 `인공지능` 수업 과제
 
-## 목표
+## 세부사항
 - 뉴런 하나를 트레이닝하는 프로그램을 구현한다.
 - 뉴런은 1의 값을 입력으로 받으며, 목표 출력값은 5다.
 - 활성화 함수는 시그모이드(Sigmoid) 함수가 아닌 `g(x) = x`라고 가정한다.
