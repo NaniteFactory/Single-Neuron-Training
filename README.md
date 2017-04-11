@@ -1,4 +1,4 @@
-﻿# Single-Neuron-Training-using-Gradient-Descent
+﻿# Single-Neuron-Training
 
 ## 개요
 - 2017학년도 4학년 1학기 `인공지능` 수업 과제
